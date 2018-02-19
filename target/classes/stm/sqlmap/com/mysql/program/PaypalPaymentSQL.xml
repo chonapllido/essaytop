@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="stm.com.program.paypal.payment.service.impl.PaypalPaymentDao">
+
+	<select id="getListCount" parameterType="PaypalPayment" resultType="int">
+		SELECT
+			COUNT(*)
+		FROM
+			ET_PAYPAL_PAYMENTS 
+	</select>
+	
+	<select id="getList" parameterType="PaypalPayment" resultType="PaypalPayment">
+		SELECT
+			*
+		FROM
+			ET_PAYPAL_PAYMENTS
+		ORDER BY
+			PAYPAL_ID DESC
+	</select>
+
+	<select id="getView" parameterType="PaypalPayment" resultType="PaypalPayment">
+		SELECT
+			USER_EMAIL
+			, AMOUNT
+			, DATE
+		FROM
+			ET_PAYPAL_PAYMENTS
+		<where>
+			PAYPAL_ID = #{level_id}
+		</where>
+	</select>
+	
+	<insert id="insert" parameterType="PaypalPayment" >
+		<selectKey keyProperty="paypal_id" resultType="String" order="BEFORE" >
+			SELECT IFNULL(MAX(PAYPAL_ID), 0) + 1 FROM ET_PAYPAL_PAYMENTS
+		</selectKey>
+		INSERT INTO ET_PAYPAL_PAYMENTS ( 
+			PAYPAL_ID
+			, USER_EMAIL
+			, AMOUNT
+			, DATE
+		) VALUES (
+			#{paypal_id}
+			, #{title}
+			, #{amount)
+			, DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+		)
+	</insert>
+	
+	<update id="update" parameterType="PaypalPayment">
+		UPDATE
+			ET_PAYPAL_PAYMENTS
+		SET
+			USER_EMAIL = #{user_email}
+			, AMOUNT = #{amount}
+		WHERE 
+			PAYPAL_ID = #{paypal_id}
+	</update>
+	
+	<update id="delete" parameterType="PaypalPayment">
+		DELETE
+		FROM
+			TBLLEVEL
+		<where>
+			LEVEL_ID = #{level_id}
+		</where>
+	</update>
+	
+	<update id="deleteList" parameterType="PaypalPayment">
+		DELETE
+		FROM
+			ET_PAYPAL_PAYMENTS
+		WHERE
+			PAYPAL_ID IN
+			<foreach collection="id_checks" item="row" open="(" close=")" separator=",">
+				${row}
+ 			</foreach>
+	</update>
+	
+	<select id="getListByDate" parameterType="PaypalPayment" resultType="PaypalPayment">
+		SELECT
+			*
+		FROM
+			ET_PAYPAL_PAYMENTS
+		<where>
+			#{start_date} <![CDATA[<=]]> DATE_FORMAT(DATE, '%y-%m-%d')
+			AND DATE_FORMAT(DATE, '%y-%m-%d') <![CDATA[<=]]> #{end_date}
+		</where>
+	</select>
+</mapper>

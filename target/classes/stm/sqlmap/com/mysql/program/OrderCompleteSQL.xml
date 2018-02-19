@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="stm.com.program.ordcomplete.service.impl.OrderCompleteDao">
+
+	<select id="getListCount" parameterType="OrderComplete" resultType="int">
+		SELECT
+			COUNT(*)
+		FROM
+			ET_ORDER TBL1
+		LEFT JOIN
+			ET_USERS TBL2 ON TBL1.USER_ID = TBL2.ID
+		LEFT JOIN
+			TBLUSERS TBL3 ON TBL1.MANAGER_ID = TBL3.USER_ID
+		LEFT JOIN
+			TBLUSERS TBL4 ON TBL1.WRITER_ID = TBL4.USER_ID
+		<where>
+			TBL1.STATUS = 3
+			AND TBL1.VALID_FLAG = 1
+			<if test="!isEmpty(search_keyword)">
+				<if test="search_field == 'order_id'">
+					AND TBL1.CE_ORDER_ID LIKE CONCAT('%', #{search_keyword}, '%')
+				</if>
+				<if test="search_field == 'user_email'">
+					AND TBL1.USER_EMAIL LIKE CONCAT('%', #{search_keyword}, '%')
+				</if>
+			</if>
+		</where>
+	</select>
+	
+	<select id="getList" parameterType="OrderComplete" resultType="OrderComplete">
+		SELECT
+			TBL1.ORDER_ID
+			, TBL1.CE_ORDER_ID
+			, TBL1.USER_EMAIL
+			, TBL1.TYPE_ID
+			, DATE_FORMAT(TBL1.DATE, '%Y-%m-%d') AS DATE
+			, DATE_FORMAT(TBL1.END_DATE, '%Y-%m-%d') AS END_DATE
+			, TBL1.DAYS
+			, TBL1.TOTAL_PAYMENT
+			, TBL1.PRICEWITHCOMMISSION
+			, TBL1.STATUS
+			, TBL1.REFUNDED
+			, TBL2.NAME AS MANAGER_ID
+			, TBL3.NAME AS WRITER_ID
+			, COALESCE(TBL4.RESULT, TBL5.RESULT) AS RESULT
+		FROM
+			ET_ORDER TBL1
+		LEFT JOIN
+			TBLUSERS TBL2 ON TBL1.MANAGER_ID = TBL2.USER_ID
+		LEFT JOIN
+			TBLUSERS TBL3 ON TBL1.WRITER_ID = TBL3.USER_ID
+		LEFT JOIN
+			TBLESSAY TBL4 ON TBL1.CE_ORDER_ID = TBL4.ORDER_ID
+		LEFT JOIN
+			TBLREVISION TBL5 ON TBL1.CE_ORDER_ID = TBL5.ORDER_ID
+		<where>
+			TBL1.STATUS = 3
+			AND TBL1.VALID_FLAG = 1
+			<if test="!isEmpty(search_keyword)">
+				<if test="search_field == 'order_id'">
+					AND TBL1.CE_ORDER_ID LIKE CONCAT('%', #{search_keyword}, '%')
+				</if>
+				<if test="search_field == 'user_email'">
+					AND TBL1.USER_EMAIL LIKE CONCAT('%', #{search_keyword}, '%')
+				</if>
+			</if>
+		</where>
+		ORDER BY TBL1.END_DATE DESC
+		<if test='page_use_at == "Y"'>
+			LIMIT ${record_count_per_page} OFFSET ${first_index}
+		</if>
+	</select>
+
+	<select id="getView" parameterType="OrderComplete" resultType="OrderComplete">
+		SELECT
+			ORDER_ID
+			, USER_ID
+			, USER_EMAIL
+			, TYPE_ID
+			, MANAGER_ID
+			, WRITER_ID
+			, SUBTOTAL
+			, DISCOUNT
+			, TOTAL_PAYMENT
+			, PAY_METHOD
+			, DAYS
+			, DATE
+			, START_DATE
+			, END_DATE
+			, DATE_MODIFIED
+			, STATUS
+			, VIEW_TIME
+			, UPLOAD_TIME
+			, REFUNDED
+			, PAID_BUT_CANCELLED
+			, VALID_FLAG
+		FROM
+			TBLORDER
+		<where>
+			ORDER_ID = #{order_id}
+		</where>
+	</select>
+	
+	<insert id="insert" parameterType="OrderComplete" >
+		<selectKey keyProperty="order_id" resultType="String" order="BEFORE" >
+			SELECT IFNULL(MAX(ORDER_ID), 0) + 1 FROM TBLORDER
+		</selectKey>
+		INSERT INTO TBLORDER ( 
+			ORDER_ID
+			, USER_ID
+			, USER_EMAIL
+			, TYPE_ID
+			, TOTAL_PAYMENT
+			, DAYS
+			, DATE
+			, START_DATE
+			, END_DATE
+			, DATE_MODIFIED
+			, STATUS
+			, VALID_FLAG
+			, DELETE_FLAG
+		) VALUES (
+			#{order_id}
+			, #{user_id}
+			, #{user_email}
+			, #{type_id}
+			, #{total_payment}
+			, #{days}
+			, DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			, DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			, #{end_date}
+			, DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			, 1
+			, 1
+			, 0
+		)
+	</insert>
+	
+	<update id="update" parameterType="OrderComplete">
+		UPDATE
+			TBLORDER
+		SET
+			DATE_MODIFIED = DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			<if test="total_payment != null">
+				, TOTAL_PAYMENT = #{total_payment}
+			</if>
+			<if test="days != null">
+				, DAYS = #{days}
+			</if>
+			<if test="end_date != null">
+				, END_DATE = #{end_date}
+			</if>
+		WHERE 
+			ORDER_ID = #{order_id}
+	</update>
+	
+	<update id="delete" parameterType="OrderComplete">
+		DELETE
+		FROM
+			TBLORDER
+		<where>
+			ORDER_ID = #{order_id}
+		</where>
+	</update>
+	
+	<update id="deleteList" parameterType="OrderComplete">
+		DELETE
+		FROM
+			TBLORDER
+		WHERE
+			ORDER_ID IN
+			<foreach collection="id_checks" item="row" open="(" close=")" separator=",">
+				${row}
+ 			</foreach>
+	</update>
+
+	<update id="updateList" parameterType="OrderComplete">
+		UPDATE
+			TBLORDER
+		SET
+			DATE_MODIFIED = DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			, STATUS = #{status}
+		WHERE
+			ORDER_ID IN
+			<foreach collection="id_checks" item="row" open="(" close=")" separator=",">
+				${row}
+ 			</foreach>
+	</update>
+	
+	<update id="refundOrder" parameterType="OrderComplete">
+		UPDATE
+			TBLORDER
+		SET
+			REFUNDED = 1
+		<where>
+			ORDER_ID = #{order_id}
+		</where>
+	</update>
+</mapper>

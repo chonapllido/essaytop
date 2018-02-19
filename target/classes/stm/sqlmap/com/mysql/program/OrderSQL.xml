@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="stm.com.program.order.service.impl.OrderDao">
+
+	<select id="getListCount" parameterType="Order" resultType="int">
+		SELECT
+			COUNT(*)
+		FROM
+			ET_ORDER TBL1
+		LEFT JOIN
+			ET_USERS TBL2 ON TBL1.USER_ID = TBL2.ID
+		LEFT JOIN
+			TBLUSERS TBL3 ON TBL1.MANAGER_ID = TBL3.USER_ID
+		LEFT JOIN
+			TBLUSERS TBL4 ON TBL1.WRITER_ID = TBL4.USER_ID
+		<where>
+			TBL1.STATUS IN(1,2,5,6) 
+			AND TBL1.VALID_FLAG = 1
+			<if test="!isEmpty(search_keyword)">
+				<if test="search_field == 'order_id'">
+					AND TBL1.CE_ORDER_ID LIKE CONCAT('%', #{search_keyword}, '%')
+				</if>
+				<if test="search_field == 'email'">
+					AND TBL1.USER_EMAIL LIKE CONCAT('%', #{search_keyword}, '%')
+				</if>
+			</if>
+		</where>
+		
+	</select>
+	
+	<select id="getList" parameterType="Order" resultType="Order">
+		SELECT
+			TBL1.ORDER_ID
+			, TBL1.CE_ORDER_ID
+			, TBL1.USER_EMAIL
+			, TBL1.TYPE_ID
+			, DATE_FORMAT(TBL1.DATE, '%Y-%m-%d') AS DATE
+			, DATE_FORMAT(TBL1.END_DATE, '%Y-%m-%d') AS END_DATE
+			, TBL1.DAYS
+			, TBL1.TOTAL_PAYMENT
+			, TBL1.PRICEWITHCOMMISSION
+			, TBL1.STATUS
+			, TBL1.REFUNDED
+			, TBL2.NAME AS MANAGER_ID
+			, TBL3.NAME AS WRITER_ID
+			, COALESCE(TBL4.RESULT, TBL5.RESULT) AS RESULT
+		FROM
+			ET_ORDER TBL1
+		LEFT JOIN
+			TBLUSERS TBL2 ON TBL1.MANAGER_ID = TBL2.USER_ID
+		LEFT JOIN
+			TBLUSERS TBL3 ON TBL1.WRITER_ID = TBL3.USER_ID
+		LEFT JOIN
+			TBLESSAY TBL4 ON TBL1.CE_ORDER_ID = TBL4.ORDER_ID
+		LEFT JOIN
+			TBLREVISION TBL5 ON TBL1.CE_ORDER_ID = TBL5.ORDER_ID
+		<where>
+			TBL1.STATUS IN(1,2,5,6) 
+			AND TBL1.VALID_FLAG = 1
+			<if test="!isEmpty(search_keyword)">
+				<if test="search_field == 'order_id'">
+					AND TBL1.CE_ORDER_ID LIKE CONCAT('%', #{search_keyword}, '%')
+				</if>
+				<if test="search_field == 'email'">
+					AND TBL1.USER_EMAIL LIKE CONCAT('%', #{search_keyword}, '%')
+				</if>
+			</if>
+		</where>
+		ORDER BY TBL1.END_DATE ASC
+		<if test='page_use_at == "Y"'>
+			LIMIT ${record_count_per_page} OFFSET ${first_index}
+		</if>
+	</select>
+
+	<select id="getView" parameterType="Order" resultType="Order">
+		SELECT
+			ORDER_ID
+			, CE_ORDER_ID
+			, USER_ID
+			, USER_EMAIL
+			, TYPE_ID
+			, MANAGER_ID
+			, WRITER_ID
+			, SUBTOTAL
+			, DISCOUNT
+			, TOTAL_PAYMENT
+			, PRICEWITHCOMMISSION
+			, DAYS
+			, DATE
+			, START_DATE
+			, END_DATE
+			, DATE_MODIFIED
+			, STATUS
+			, VIEW_TIME
+			, UPLOAD_TIME
+			, REFUNDED
+			, PAID_BUT_CANCELLED
+			, VALID_FLAG
+		FROM
+			ET_ORDER
+		<where>
+			CE_ORDER_ID = #{ce_order_id}
+		</where>
+	</select>
+	
+	<insert id="insert" parameterType="Order" >
+		<selectKey keyProperty="order_id" resultType="String" order="BEFORE" >
+			SELECT IFNULL(MAX(ORDER_ID), 0) + 1 FROM ET_ORDER
+		</selectKey>
+		INSERT INTO ET_ORDER ( 
+			ORDER_ID
+			, CE_ORDER_ID
+			, USER_ID
+			, USER_EMAIL
+			, TYPE_ID
+			, TOTAL_PAYMENT
+			, PRICEWITHCOMMISSION
+			, SUBTOTAL
+			, DAYS
+			, DATE
+			, START_DATE
+			, END_DATE
+			, DATE_MODIFIED
+			, STATUS
+			, VALID_FLAG
+			, DELETE_FLAG
+		) VALUES (
+			#{order_id}
+			, #{ce_order_id}
+			, #{user_id}
+			, #{user_email}
+			, #{type_id}
+			, #{total_payment}
+			, #{pricewithcommission}
+			, #{subtotal}
+			, #{days}
+			, DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			, DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			, #{end_date}
+			, DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			, #{status}
+			, 1
+			, 0
+		)
+	</insert>
+	
+	<update id="update" parameterType="Order">
+		UPDATE
+			ET_ORDER
+		SET
+			DATE_MODIFIED = DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			<if test="total_payment != null">
+				, TOTAL_PAYMENT = #{total_payment}
+			</if>
+			<if test="days != null">
+				, DAYS = #{days}
+			</if>
+			<if test="end_date != null">
+				, END_DATE = #{end_date}
+			</if>
+			<if test="pricewithcommission != null">
+				, PRICEWITHCOMMISSION = #{pricewithcommission}
+			</if>
+			<if test="subtotal != null">
+				, SUBTOTAL = #{subtotal}
+			</if>
+		WHERE 
+			CE_ORDER_ID = #{ce_order_id}
+	</update>
+	
+	<update id="delete" parameterType="Order">
+		DELETE
+		FROM
+			ET_ORDER
+		<where>
+			ORDER_ID = #{order_id}
+		</where>
+	</update>
+
+	<update id="deleteList" parameterType="Order">
+		DELETE
+		FROM
+			ET_ORDER
+		WHERE
+			ORDER_ID IN
+			<foreach collection="id_checks" item="row" open="(" close=")" separator=",">
+				${row}
+ 			</foreach>
+	</update>
+	
+	<update id="updateList" parameterType="Order">
+		UPDATE
+			ET_ORDER
+		SET
+			DATE_MODIFIED = DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			, STATUS = #{status}
+		WHERE
+			ORDER_ID IN
+			<foreach collection="id_checks" item="row" open="(" close=")" separator=",">
+				${row}
+ 			</foreach>
+	</update>
+	
+	<select id="isFirstOrder" parameterType="Order" resultType="int">
+		SELECT
+			COUNT(*)
+		FROM
+			ET_ORDER
+		WHERE
+			(USER_ID = #{user_id}
+			OR
+			USER_EMAIL = #{user_email})
+			AND STATUS != 4
+	</select>
+	
+	<update id="updateStatus" parameterType="Order">
+		UPDATE
+			ET_ORDER
+		SET
+			STATUS = #{status}
+			, DATE_MODIFIED = DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+		<where>
+			CE_ORDER_ID = #{ce_order_id}
+		</where>
+	</update>
+	
+	<update id="cancelUnpaidOrder" parameterType="Order">
+		UPDATE
+			ET_ORDER
+		SET
+			DATE_MODIFIED = DATE_FORMAT(SYSDATE(), '%Y-%m-%d %H:%i:%s')
+			, STATUS = 4 
+		<where>
+			STATUS = 1 
+			AND HOUR(TIMEDIFF(now(), DATE)) >= 12
+		</where>
+	</update>
+	
+	<select id="getListByUserCount" parameterType="Order" resultType="int">
+		SELECT 
+			COUNT(TBL1.ORDER_ID)
+		FROM 
+			ET_ORDER TBL1
+		LEFT JOIN 
+			TBLUSERS TBL2 ON TBL1.WRITER_ID = TBL2.USER_ID
+		LEFT JOIN
+			TBLESSAY TBL3 ON TBL1.CE_ORDER_ID = TBL3.ORDER_ID
+		LEFT JOIN
+			TBLREVISION TBL4 ON TBL1.CE_ORDER_ID = TBL4.ORDER_ID
+		WHERE 
+			TBL1.USER_ID = #{user_id}
+			AND TBL1.VALID_FLAG = 1
+			AND TBl1.DELETE_FLAG = 0
+		<if test="!isEmpty(search_keyword)">
+			<if test="search_field == 'order_id'">
+				AND TBL1.CE_ORDER_ID LIKE CONCAT('%', #{search_keyword}, '%')
+			</if>
+		</if>
+	</select>
+	<select id="getListByUser" parameterType="Order" resultType="Order">
+		SELECT 
+			TBL1.ORDER_ID
+			, TBL1.CE_ORDER_ID
+			, TBL1.TYPE_ID
+			, DATE_FORMAT(TBL1.DATE, '%Y-%m-%d') AS DATE
+			, DATE_FORMAT(TBL1.END_DATE, '%Y-%m-%d') AS END_DATE
+			, TBL1.PRICEWITHCOMMISSION
+			, TBL2.NAME AS WRITER_ID
+			, TBL3.FILE
+			, TBL3.FILE_UPLOAD
+			, TBL4.FILE_UPLOAD AS FILE
+			, TBL4.FILE_UPLOAD_TMP AS FILE_UPLOAD
+			, TBL5.NAME AS STATUS
+		FROM 
+			ET_ORDER TBL1
+		LEFT JOIN 
+			TBLUSERS TBL2 ON TBL1.WRITER_ID = TBL2.USER_ID
+		LEFT JOIN
+			TBLESSAY TBL3 ON TBL1.CE_ORDER_ID = TBL3.ORDER_ID
+		LEFT JOIN
+			TBLREVISION TBL4 ON TBL1.CE_ORDER_ID = TBL4.ORDER_ID
+		LEFT JOIN
+			TBLSTATUS TBL5 ON TBL1.STATUS = TBL5.STATUS_ID
+		WHERE 
+			TBL1.USER_ID = #{user_id}
+			AND TBL1.VALID_FLAG = 1
+			AND TBl1.DELETE_FLAG = 0
+		<if test="!isEmpty(search_keyword)">
+			<if test="search_field == 'order_id'">
+				AND TBL1.CE_ORDER_ID LIKE CONCAT('%', #{search_keyword}, '%')
+			</if>
+		</if>
+		ORDER BY DATE DESC
+		<if test='page_use_at == "Y"'>
+			LIMIT ${record_count_per_page} OFFSET ${first_index}
+		</if>
+ 
+	</select>
+	
+</mapper>
