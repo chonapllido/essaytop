@@ -63,8 +63,7 @@
              </c:if>
              <img src="${img_src }/stm/img_easytop.png" alt="Essaytop.com"/></a>
            </span>
-           <span class="skype-service-connecting">
-           <%-- 
+           <span class="skype-service-connecting"> 
 			<script type="text/javascript" src="${js_src }/stm/js/skype-uri.js"></script>
 			<div class="skype-box" id="SkypeButton_Call_essaytop.com_1" >
 			  <script type="text/javascript">
@@ -75,7 +74,7 @@
 			  "imageSize": 32
 			});
 			 </script>
-			</div>--%>
+			</div>
            </span>
        </div>
        <!-- //side-links -->
