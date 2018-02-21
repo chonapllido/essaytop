@@ -142,7 +142,7 @@
 	<stmfn:paging1 />
 </div>
 </form:form>
-<form:form name="Form_manage_search" commandName="orderCommand" action="${url }?${param }" method="post">
+<form:form name="Form_manage_search" commandName="orderCommand" action="${url }?${params }" method="post">
 <div class="admin-search">
 	<select name="search_field">
 		<option value="order_id" <c:if test="${orderCommand.search_field eq 'order_id' }">selected='selected'</c:if>>Order No</option>

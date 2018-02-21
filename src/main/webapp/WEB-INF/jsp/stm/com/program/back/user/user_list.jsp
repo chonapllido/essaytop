@@ -39,7 +39,7 @@
 	<stmfn:paging1/>
 </div>
 </form:form>
-<form:form name="Form_search" action="${url }?${param }" method="post">
+<form:form name="Form_search" action="${url }?${params }" method="post">
 <div class="admin-search">
 	<select name="search_field">
 		<option value="user_email">Email</option>

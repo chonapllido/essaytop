@@ -29,7 +29,7 @@
 	        <span class="lock-image">
 	            <img src="${img_src }/stm/img_lock.png" alt="lock"/>                  
 	        </span>  
-			<form:form name="Form_write" action="${url }?${param }" method="post" >
+			<form:form name="Form_write" action="${url }?${params }" method="post" >
 			 	<div class="login-details fp">
 				 	<span class="instruct">Please enter your email address below.</span>
 					<span class="msg">&nbsp;</span>
